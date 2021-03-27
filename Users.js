@@ -44,6 +44,5 @@ UserSchema.methods.comparePassword = function (password, callback) {
         callback(isMatch);
     })
 }
-
 //return the model to server
 module.exports = mongoose.model('User', UserSchema);

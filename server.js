@@ -15,12 +15,12 @@ var jwt = require('jsonwebtoken');
 var cors = require('cors');
 var User = require('./Users');
 var Movie = require('./Movies');
+var Review = require('./Reviews');
 
 var app = express();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-
 app.use(passport.initialize());
 
 var router = express.Router();
@@ -184,6 +184,55 @@ router.route('/movies')
                     return res.json({success: true, msg: 'Movie successfully deleted.'})
                 }
             });
+        }
+    });
+
+// reviews
+router.route('/reviews').post(authJwtController.isAuthenticated, function (req, res) {
+    Movie.findOne({Title: req.body.movieTitle}).exec(function(err, movie) {
+        if (err) res.send(err);
+        // if the movie with reviews already exists, just add new reviews
+        if (movie !== null) {
+            var newReview = new Review();
+            newReview.movieTitle = req.body.movieTitle;
+            newReview.reviewer = req.body.reviewer;
+            newReview.quote = req.body.quote;
+            newReview.rating = req.body.rating;
+            newReview.save(function (err) {
+                if (err) {
+                    return res.send({success: false, msg: "Failed to create a movie review"});
+                }
+                res.json({msg: 'Review has been successfully created!'});
+            });
+        }
+        else
+        {
+            res.json({msg: "Movie with that particular title not found!"});
+
+        }
+    });
+});
+router.route('/reviews')
+    .get(authJwtController.isAuthenticated, function (req, res) {
+        if (req.query.reviews === 'true') {
+            Movie.aggregate([
+                {
+                    $lookup:
+                        {
+                            from: 'reviews',
+                            localField: 'Title',
+                            foreignField: 'MovieTitle',
+                            as: 'Reviews'
+                        }
+                }
+            ]). exec((err, movie) => {
+                if (err) res.json({msg: "failed to get the reviews"});
+            res.json(movie);
+        });
+        }
+        else
+        {
+            res.json({message: "Please send a response with the query parameter ture"});
         }
     });
 

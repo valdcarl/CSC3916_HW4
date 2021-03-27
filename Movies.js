@@ -22,4 +22,11 @@ var MovieSchema = new Schema({
     actors: { type: [{actorName: String, characterName: String}], required: true }
 });
 
+MovieSchema.pre('save', function (next) {
+   if(this.actors.length < 3) {
+       return next(new Error('Fewer than 3 actors'));
+   }
+   next()
+});
+
 module.exports = mongoose.model('Movie', MovieSchema);
