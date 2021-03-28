@@ -1,26 +1,24 @@
 /*
-CSC3916 HW2
-File: Server.js
-Description: Web API scaffolding for Movie API
- */
+ CSC3916
+ File: server.js
+ Description: Web API : Movie API
+*/
 
-let envPath = __dirname + "/.env"
-require('dotenv').config({path:envPath});
 var express = require('express');
 var bodyParser = require('body-parser');
 var passport = require('passport');
-var authController = require('./auth');
 var authJwtController = require('./auth_jwt');
 var jwt = require('jsonwebtoken');
 var cors = require('cors');
 var User = require('./Users');
-var Movie = require('./Movies');
-var Review = require('./Reviews');
+var Movie =require('./Movies');
+var Reviews = require('./Review');
 
 var app = express();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+
 app.use(passport.initialize());
 
 var router = express.Router();
@@ -42,6 +40,7 @@ function getJSONObjectForMovieRequirement(req) {
 
     return json;
 }
+
 // signup
 router.post('/signup', function(req, res) {
     if (!req.body.username || !req.body.password) {
@@ -64,6 +63,7 @@ router.post('/signup', function(req, res) {
         });
     }
 });
+
 // signin
 router.post('/signin', function (req, res) {
     var userNew = new User();
@@ -87,157 +87,133 @@ router.post('/signin', function (req, res) {
         })
     })
 });
+
 // movies
-router.route('/movies')
-    //we need to be able to save a movie to our mongodb 'movies' collection
-    .post(authJwtController.isAuthenticated, function (req, res) {
-        if (!req.body.title || !req.body.releaseYear || !req.body.genre || !req.body.actors) {
-            res.json({success: false, msg: 'You must include all criteria requested to input a movie.'})
+router.route('/Movies')
+    .delete(authJwtController.isAuthenticated, function(req, res){
+        if(!req.body.title){
+            res.status(403).json({success:false, message: "Please provide a movie to be delete."});
         }
-        else {
-            if (req.body.actors.length < 3) {
-                // there must be 3 actors per movie
-                res.json({success: false, msg: 'You must include 3 or more actors.'})
-            } else {
-                let newMovie  = new Movie();
-                newMovie.title = req.body.title;
-                newMovie.releaseYear = req.body.releaseYear;
-                newMovie.genre = req.body.genre;
-                newMovie.actors = req.body.actors;
-
-                newMovie.save(function(err) {
-                    if (err) {
-                        if (err.code == 11000)
-                            return res.json({success: false, msg: 'That movie title already exists.'});
-                        else
-                            return res.json(err);
-
-                    }
-
-                    res.json({success: true, msg: 'Movie successfully saved.'})
-                })
-            }
-        }
-    })
-    .get(authJwtController.isAuthenticated, function(req, res) {
-        //we need to be able to return all of the movies in the collection
-        Movie.find(function(err, movies) {
-            if (err) {
-               return res.json(err);
-            } else {
-                res.json(movies);
-            }
-        });
-    })
-    .put(authJwtController.isAuthenticated, function(req, res) {
-        //we need to be able to update movies as well
-        //lets find the movies by title
-        if (!req.body.title) {
-            return res.json({success: false, msg: 'That title does not exist, try again with applicable title.'})
-        }
-        else {
-            Movie.findOne({title: req.body.title}).exec(function (err, movie) {
-                if (err) {
-                    res.send(err);
+        else{
+            Movie.findOneAndDelete({title:req.body.title}, function(err, movie){
+                if (movie){
+                    res.status(200).json({success: true, message: "Found the movie!", Movie: movie});
                 }
                 else {
-                    if (movie) {
-                        if(req.body.releaseYear){
-                            movie.year = req.body.releaseYear;
-                        }
-                        if(req.body.genre){
-                            movie.genre = req.body.genre;
-                        }
-                        if(req.body.actors){
-                            //check if user input at least 3 actors again
-                            if(req.body.actors.length < 3){
-                                return res.json({success: false, msg: 'You must include 3 or more actors.'})
-                            }// otherwise we are good
-                            movie.actors = req.body.actors;
-                        }
-
-                        movie.save(function (err) {
-                            if (err) {
-                                return res.json(err);
-                            }
-                            res.json({success: true, msg: 'Movie has been updated.'})
-                        })
-                    }
-                    else {
-                        return res.json({success: false, msg: 'That title does not exist, cannot update.'})
-                    }
+                    res.status(404).json({success:false, message: "Movie was not found!"});
                 }
-            });
+            })
         }
     })
-    .delete(authJwtController.isAuthenticated, function(req, res) {
-        // we need to be able to delete a movie from the collection as well
-        if (!req.body.title){
-            return res.json({success: false, msg: 'That title does not exist, try again with applicable title to delete.'})
-        } else {
-            Movie.findOneAndDelete({title: req.body.title}, function(err, movie) {
-                if (err) {
-                    res.send(err);
-                } else if(!movie) {
-                    return res.json({success: false, msg: 'That title does not exist.'})
-                } else {
-                    return res.json({success: true, msg: 'Movie successfully deleted.'})
+    .put(authJwtController.isAuthenticated, function(req, res) {
+        if(!req.body.title|| !req.body.new.title){
+            res.status(403).json({SUCCESS:false, message: "Please provide a movie title to be updated along with the new title"})
+        }
+        else{
+            Movie.findOneAndUpdate({title:req.body.title}, {title :req.body.new_title}, function(err, movie){
+                if (movie) {
+                    res.status(200).json({success: true, message: "Found Movie"})
                 }
-            });
-        }
-    });
-
-// reviews
-router.route('/reviews').post(authJwtController.isAuthenticated, function (req, res) {
-    Movie.findOne({Title: req.body.movieTitle}).exec(function(err, movie) {
-        if (err) res.send(err);
-        // if the movie with reviews already exists, just add new reviews
-        if (movie !== null) {
-            var newReview = new Review();
-            newReview.movieTitle = req.body.movieTitle;
-            newReview.reviewer = req.body.reviewer;
-            newReview.quote = req.body.quote;
-            newReview.rating = req.body.rating;
-            newReview.save(function (err) {
-                if (err) {
-                    return res.send({success: false, msg: "Failed to create a movie review"});
+                else {
+                    res.status(404).json({success: false, message: "Movie not found"});
                 }
-                res.json({msg: 'Review has been successfully created!'});
-            });
+            })
         }
-        else
-        {
-            res.json({msg: "Movie with that particular title not found!"});
+    })
+    .get(authJwtController.isAuthenticated,function(req, res) {
+        if(!req.body){
+            res.status(403).json({SUCCESS:false, message: "Please provide a movie to display"})
+        }
+        else{
+            Movie.find({title:req.body.title}).select("title year genre actorsName").exec(function(err, movie){
+                if (movie) {
+                    res.status(200).json({success: true, message: "Success! The Movie was found", Movie: movie})
+                }
+                else {
+                    res.status(404).json({success: false, message: "Movie not found"});
+                }
+            })
+        }
+    })
+    .post(authJwtController.isAuthenticated,function(req, res) {
+        if(!req.body.title || !req.body.year || !req.body.genre || !req.body.actorsName[0] || !req.body.actorsName[1] || !req.body.actorsName[2]) {
+            res.status(403).json({SUCCESS:false, message: "Error. Incorrect format "});
+        }
+        else{
+            var movie = new Movie();
+            movie.title = req.body.title;
+            movie.year = req.body.year;
+            movie.genre = req.body.genre;
+            movie.actorsName = req.body.actorsName;
 
+            movie.save(function(err){
+                if (err){
+                    if(err.code === 11000)
+                        return res.json({SUCCESS:false, MESSAGE: "Error. Movie already exists"});
+                    else
+                        return res.json(err);
+                }
+            })
+            res.json({SUCCESS:true, MESSAGE: "Movie Is Created."})
         }
-    });
-});
-router.route('/reviews')
-    .get(authJwtController.isAuthenticated, function (req, res) {
-        if (req.query.reviews === 'true') {
-            Movie.aggregate([
-                {
-                    $lookup:
+    })
+
+// review
+router.route('/Review')
+    .get(function(req, res) {
+        if(!req.body.movieTitle){
+            res.json({SUCCESS:false, message: "Please provide a review to display"})
+        }
+        else if(req.query.Review === "true"){
+            Movie.findOne({movieTitle:req.body.movieTitle}, function(err, movie) {
+                if (err) {
+                    res.json({success: false, message: "Error! The review was not found"})
+                }
+                else{
+                    Movie.aggregate([{
+                        $match: {movieTitle: req.body.movieTitle}
+                    },
                         {
-                            from: 'reviews',
-                            localField: 'Title',
-                            foreignField: 'MovieTitle',
-                            as: 'Reviews'
+                            $lookup: {
+                                from: "reviews",
+                                localField: "movieTitle",
+                                foreignField: "movieTitle",
+                                as: "movieReview"
+                            }
+                        }]).exec(function (err, movie) {
+                        if (err) {
+                            return res.json(err);
+                        } else {
+                            return res.json(movie);
                         }
+                    })
                 }
-            ]). exec((err, movie) => {
-                if (err) res.json({msg: "failed to get the reviews"});
-            res.json(movie);
-        });
+            })
         }
-        else
-        {
-            res.json({message: "Please send a response with the query parameter ture"});
+    })
+    .post(authJwtController.isAuthenticated,function(req, res) {
+        if(!req.body.movieTitle || !req.body.reviewer || !req.body.quote || !req.body.rating) {
+            res.status(403).json({SUCCESS:false, message: "Error. Incorrect format"});
         }
-    });
+        else{
+            var review = new Reviews();
+            review.movieTitle = req.body.movieTitle;
+            review.reviewer = req.body.reviewer;
+            review.quote = req.body.quote;
+            review.rating = req.body.rating;
+
+            review.save(function(err){
+                if (err){
+                    if(err.code === 11000)
+                        return res.json({SUCCESS:false, MESSAGE: "Error. Review already exists"});
+                    else
+                        return res.json(err);
+                }
+            })
+            res.json({SUCCESS:true, MESSAGE: "Review Is Created."})
+        }
+    })
 
 app.use('/', router);
 app.listen(process.env.PORT || 8080);
 module.exports = app; // for testing only
-
-

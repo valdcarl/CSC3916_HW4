@@ -20,4 +20,5 @@ var ReviewSchema = new Schema({
     rating: { type: Number, min: 1, max: 5,required: true}
 });
 
+//exporting the files
 module.exports = mongoose.model('Reviews', ReviewSchema);
