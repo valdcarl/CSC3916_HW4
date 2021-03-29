@@ -1,5 +1,5 @@
 # CSC3916_HW4
-[![Run in Postman](https://run.pstmn.io/button.svg)](https://app.getpostman.com/run-collection/ae288ac3c08cbc4e5672#?env%5BHW2%5D=W10=)
+[![Run in Postman](https://run.pstmn.io/button.svg)](https://god.postman.co/run-collection/58c2a20f5606fb99b1be?action=collection%2Fimport&env%5BHW4%5D=W10=)
 
 
 URL to HW5 Heroku app with updated hw4 path in .env: https://csc3916-hw5-carlos.herokuapp.com/#/
