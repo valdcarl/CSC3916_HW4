@@ -5,6 +5,7 @@
 */
 let envPath = __dirname + "/.env"
 require('dotenv').config({path:envPath});
+
 var express = require('express');
 var bodyParser = require('body-parser');
 var passport = require('passport');
@@ -13,7 +14,7 @@ var jwt = require('jsonwebtoken');
 var cors = require('cors');
 var User = require('./Users');
 var Movie =require('./Movies');
-var Reviews = require('./Reviews');
+var Reviews = require('./Review');
 
 var app = express();
 app.use(cors());
@@ -160,25 +161,25 @@ router.route('/Movies')
     })
 
 // reviews
-router.route('/Reviews')
+router.route('/Review')
     .get(function(req, res) {
-        if(!req.body.movieTitle){
+        if(!req.body.title){
             res.json({SUCCESS:false, message: "Please provide a review to display"})
         }
         else if(req.query.Review === "true"){
-            Movie.findOne({movieTitle:req.body.movieTitle}, function(err, movie) {
+            Movie.findOne({title:req.body.title}, function(err, movie) {
                 if (err) {
                     res.json({success: false, message: "Error! The review was not found"})
                 }
                 else{
                     Movie.aggregate([{
-                        $match: {movieTitle: req.body.movieTitle}
+                        $match: {title: req.body.title}
                     },
                         {
                             $lookup: {
                                 from: "reviews",
-                                localField: "movieTitle",
-                                foreignField: "movieTitle",
+                                localField: "title",
+                                foreignField: "title",
                                 as: "movieReview"
                             }
                         }]).exec(function (err, movie) {
@@ -193,12 +194,12 @@ router.route('/Reviews')
         }
     })
     .post(authJwtController.isAuthenticated,function(req, res) {
-        if(!req.body.movieTitle || !req.body.reviewer || !req.body.quote || !req.body.rating) {
+        if(!req.body.title || !req.body.reviewer || !req.body.quote || !req.body.rating) {
             res.status(403).json({SUCCESS:false, message: "Error. Incorrect format"});
         }
         else{
             var review = new Reviews();
-            review.movieTitle = req.body.movieTitle;
+            review.title = req.body.title;
             review.reviewer = req.body.reviewer;
             review.quote = req.body.quote;
             review.rating = req.body.rating;
