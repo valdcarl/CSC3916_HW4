@@ -3,7 +3,8 @@
  File: server.js
  Description: Web API : Movie API
 */
-
+let envPath = __dirname + "/.env"
+require('dotenv').config({path:envPath});
 var express = require('express');
 var bodyParser = require('body-parser');
 var passport = require('passport');
@@ -12,7 +13,7 @@ var jwt = require('jsonwebtoken');
 var cors = require('cors');
 var User = require('./Users');
 var Movie =require('./Movies');
-var Reviews = require('./Review');
+var Reviews = require('./Reviews');
 
 var app = express();
 app.use(cors());
@@ -53,7 +54,7 @@ router.post('/signup', function(req, res) {
 
         user.save(function(err){
             if (err) {
-                if (err.code == 11000)
+                if (err.code === 11000)
                     return res.json({ success: false, message: 'A user with that username already exists.'});
                 else
                     return res.json(err);
@@ -110,7 +111,7 @@ router.route('/Movies')
             res.status(403).json({SUCCESS:false, message: "Please provide a movie title to be updated along with the new title"})
         }
         else{
-            Movie.findOneAndUpdate({title:req.body.title}, {title :req.body.new_title}, function(err, movie){
+            Movie.findOneAndUpdate({title:req.body.title}, {title :req.body.new.title}, function(err, movie){
                 if (movie) {
                     res.status(200).json({success: true, message: "Found Movie"})
                 }
@@ -158,8 +159,8 @@ router.route('/Movies')
         }
     })
 
-// review
-router.route('/Review')
+// reviews
+router.route('/Reviews')
     .get(function(req, res) {
         if(!req.body.movieTitle){
             res.json({SUCCESS:false, message: "Please provide a review to display"})
