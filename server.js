@@ -108,11 +108,11 @@ router.route('/Movies')
         }
     })
     .put(authJwtController.isAuthenticated, function(req, res) {
-        if(!req.body.title|| !req.body.new.title){
+        if(!req.body.title|| !req.body.new_title){
             res.status(403).json({SUCCESS:false, message: "Please provide a movie title to be updated along with the new title"})
         }
         else{
-            Movie.findOneAndUpdate({title:req.body.title}, {title :req.body.new.title}, function(err, movie){
+            Movie.findOneAndUpdate({title:req.body.title}, {title :req.body.new_title}, function(err, movie){
                 if (movie) {
                     res.status(200).json({success: true, message: "Found Movie"})
                 }
@@ -147,6 +147,7 @@ router.route('/Movies')
             movie.year = req.body.year;
             movie.genre = req.body.genre;
             movie.actorsName = req.body.actorsName;
+            movie.imageURL = req.body.imageURL;
 
             movie.save(function(err){
                 if (err){

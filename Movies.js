@@ -23,7 +23,8 @@ var MovieSchema = new Schema({
         {actorName : {type: String, required: true}, characterName: {type :String, required: true}},
         {actorName : {type: String, required: true}, characterName: {type :String, required: true}},
         {actorName : {type: String, required: true}, characterName: {type :String, required: true}}
-    ]
+    ],
+    imageURL: { type: string }
 });
 
 
